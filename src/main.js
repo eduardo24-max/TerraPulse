@@ -517,7 +517,7 @@ async function reportAnalysis() {
 // ---------- Configuración ----------
 function applyRefresh(min) {
   clearInterval(refreshTimer);
-  refreshTimer = setInterval(refreshEvents, min * 60 * 1000);
+  if (conn.mode !== 'offline') refreshTimer = setInterval(refreshEvents, min * 60 * 1000);
   store.set('tp-refresh', String(min));
 }
 $('cfgRefresh').value = store.get('tp-refresh', '10');
@@ -641,7 +641,8 @@ $('btnArenal').onclick = () => analyzePoint({ lat: 24.02, lon: -104.67, title: '
   setApiStatus(conn.mode !== 'offline', conn.oldBackend ? 'Conectada a un backend anterior: cierra el uvicorn viejo y vuelve a ejecutar npm run dev.' : CONN_TXT[conn.mode]);
   renderSatCatalog();
   selectModule('agua');
-  await refreshEvents();
+  if (conn.mode === 'offline') { $('alertList').innerHTML = '<li class="muted">Sin conexión al backend. Los eventos en vivo no están disponibles en esta versión publicada.</li>'; $('alertsUpdated').textContent = 'sin conexión'; setApiStatus(false, CONN_TXT.offline); }
+  else await refreshEvents();
   showEvents($('cfgShowEvents').checked);
   applyRefresh(+$('cfgRefresh').value);
 })();
