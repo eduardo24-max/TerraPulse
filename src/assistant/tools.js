@@ -57,7 +57,14 @@ export const TOOLS = [
     }, { required: ['modo'], abortable: true }),
   T('analizar_zona', 'Analiza una zona YA encerrada con un polígono (por nombre; si se omite, la zona activa). tema: vegetacion (NDVI, EVI, SAVI), humedad (NDMI, NDWI), calor (temperatura de la superficie con Landsat), incendios (índice de quema, focos FIRMS y calor), suelo (suelo desnudo BSI), radar (pasadas y cambio del radar NISAR banda L) o completo (todas las anomalías frente a años anteriores, por sectores, incluido NISAR). Devuelve una explicación lista para decir. Tarda de 3 a 30 segundos. Si no hay zona, pide al usuario encerrarla primero.',
     { tema: S('Tema', { enum: ['vegetacion', 'humedad', 'calor', 'incendios', 'suelo', 'radar', 'completo'] }), zona: S('Nombre o id de la zona') },
-    async a => { const r = await app().zones.analyze(a.zona && clean(a.zona), a.tema || 'completo'); return { data: r, say: r.explicacion }; }, { required: ['tema'], abortable: true }),
+    async a => {
+      let pre = '';
+      if (!a.zona && !app().zones.activeZone()) {   // sin polígono: se encierra el lugar seleccionado para poder dar datos reales
+        const c = app().context().ubicacion_seleccionada;
+        if (c) { const n = String(c.nombre || '').split(',')[0]; const z = app().zones.zoneFromCircle(c.lat, c.lon, 2, /^(coordenadas|centro|zona)|^[\d\s.-]*$/i.test(n) ? undefined : n); pre = `Encerré dos kilómetros alrededor de ${z.name} para analizarlo. `; }
+      }
+      const r = await app().zones.analyze(a.zona && clean(a.zona), a.tema || 'completo'); return { data: r, say: pre + r.explicacion };
+    }, { required: ['tema'], abortable: true }),
   T('ver_indice_en_mapa', 'Pinta sobre la zona el mapa de un índice ya calculado.', { indice: S('Imagen: un índice, LST (temperatura) o NISAR (radar)', { enum: INDICES }), zona: S('Zona') },
     a => app().zones.showIndexLayer(a.zona && clean(a.zona), a.indice) ? { say: `Listo, ya se ve ${a.indice === 'LST' ? 'la temperatura de la superficie' : a.indice === 'NISAR' ? 'la imagen del radar NISAR' : 'el índice ' + a.indice} sobre la zona.` } : { ok: false, error: 'Primero hay que analizar esa zona con el tema correspondiente.' }, { required: ['indice'] }),
   T('listar_zonas', 'Lista las zonas delimitadas con sus resultados.', {}, () => ({ data: app().zones.listZones() })),
@@ -79,8 +86,13 @@ export const TOOLS = [
   T('actualizar_eventos', 'Vuelve a cargar los eventos desde la API local.', {}, async () => { await app().refreshEvents(); return { say: 'Eventos actualizados.' }; }),
   T('sincronizar_fuentes', 'Pide al backend descargar de nuevo GDACS, FIRMS y EONET y guardar en la base de datos. Requiere confirmación.', {},
     () => { app().sync(); return { say: 'Sincronización solicitada.' }; }, { confirm: () => '¿Sincronizar ahora las fuentes y escribir en la base de datos?' }),
-  T('generar_reporte', 'Descarga en este equipo el reporte PDF del análisis o lugar actual.', {},
-    () => app().report() === null ? { ok: false, error: 'Primero selecciona un lugar o un evento.' } : { say: 'Generé el reporte PDF.' }),
+  T('generar_reporte', 'Descarga en este equipo, al momento, el reporte PDF con los datos actuales de la zona encerrada (o del análisis o lugar actual si no hay zona). Si la zona no se ha analizado, la analiza primero.', { zona: { type: 'string', description: 'Nombre de la zona; por defecto la activa' } },
+    async a => {
+      const r = app().report(a.zona && clean(a.zona));
+      if (r === null) return { ok: false, error: 'Primero encierra una zona o selecciona un lugar, y te descargo su reporte.' };
+      const d = await r;
+      return { say: d?.zona ? `Listo, descargué el reporte de ${d.zona} con los datos de este momento. Incluye ${d.temas.join(', ').toLowerCase()}. Está en tu carpeta de descargas.` : 'Listo, descargué el reporte en PDF. Está en tu carpeta de descargas.', data: d || {} };
+    }, { abortable: true }),
   T('compartir_ubicacion', 'Copia al portapapeles un enlace de Google Maps a la ubicación seleccionada para compartirla. Requiere confirmación.', {},
     async () => { const c = app().context().ubicacion_seleccionada; if (!c) return { ok: false, error: 'No hay ubicación seleccionada.' };
       await navigator.clipboard.writeText(`https://www.google.com/maps?q=${c.lat},${c.lon}`); return { say: 'Copié el enlace al portapapeles.' }; },

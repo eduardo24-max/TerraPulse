@@ -50,6 +50,7 @@ $('zoomOut').onclick = () => zoom(-1);
 // Reportes: PDF del análisis abierto o del lugar seleccionado
 $('btnReports').onclick = async () => {
   const r = window.TerraPulse?.report();
+  r?.catch?.(() => {});   // si el análisis de la zona falla, el motivo ya se muestra en su tarjeta
   if (r !== null && r !== undefined) return;
   setPanel('right', false);
   $('infoCard').closest('.glass-card').classList.remove('collapsed');

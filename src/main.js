@@ -10,7 +10,7 @@ import { findClearScenes, bestScene, sceneUrl, damageUrl, fillUrl } from './scen
 import { detectConnection, conn, viaApi } from './connection.js';
 import { search, reverse } from './globalSearch.js';
 import { renderEvents, sourceLabel, timeAgo } from './alert.js';
-import { downloadReport } from './report.js';
+import { downloadReport, downloadZoneReport } from './report.js';
 import { GIBS_LAYERS, MODULES, SAT_CATALOG, LAYER_INFO, gibsUrl, resolveLayer, loadWayback } from './satelliteSources.js';
 import { getDisasters, getSarAnalysis, getTimeMachine, getRisk, getHealth, syncNow, API_LABEL } from './api.js';
 import { typeOf, sev, iconUri, eventDate, coordsOf, sortEvents, TYPE_LIST } from './events.js';
@@ -568,7 +568,12 @@ window.TerraPulse = {
     return r.risk_score;
   },
   route: async q => { const r = await firstPlace(q); window.open(mapsUrl(r.lat, r.lon), '_blank', 'noopener'); return r; },
-  report: () => {
+  report: zona => {
+    // Si hay una zona encerrada, el reporte es el de esa zona, con los datos del momento
+    let z = (zona && Z.getZone(zona)) || Z.activeZone();
+    const c = current || analysis;
+    if (!z && c) { const n = String(c.lugar || c.title || '').split(',')[0]; z = Z.zoneFromCircle(c.lat, c.lon, 2, /^(coordenadas|centro|zona)|^[\d\s.-]*$/i.test(n) ? undefined : n); }
+    if (z) return Z.reportData(z.id).then(d => { downloadZoneReport(d); return { zona: d.nombre, temas: d.sections.map(s => s[0]) }; });
     if (analysis) return reportAnalysis();
     if (current) { downloadReport({ lugar: current.lugar, pais: current.pais, lat: current.lat, lon: current.lon, causa: 'Sin análisis', fuentes: ['NASA GIBS'] }); return true; }
     return null;
@@ -712,7 +717,7 @@ window.TerraPulse.app = {
   sync: () => $('cfgSync').click(),
   settings(open) { if (open === !$('settingsPanel').hidden) return; $('btnSettings').click(); },
   theme(t) { const dark = (document.documentElement.dataset.theme || 'dark') !== 'light'; if ((t === 'claro') === dark) $('btnTheme').click(); },
-  report: () => window.TerraPulse.report(),
+  report: z => window.TerraPulse.report(z),
   zones: Z,
 };
 Z.initZones({ beginDraw: () => window.TerraPulse.app.drawZone(), current: () => current,

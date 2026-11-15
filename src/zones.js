@@ -139,12 +139,12 @@ export function showIndexLayer(id, key = 'NDVI') { const z = getZone(id) || acti
 // ---------- Explicaciones en lenguaje claro (las usa la tarjeta y la voz de Terra) ----------
 const ix = (z, k) => z.indices.stats[k].mean;
 const P = {
-  vegetacion: z => z.indices && `El vigor de la vegetación, que se mide con el índice NDVI en una escala de menos uno a uno, donde arriba de cero punto seis es vegetación densa y sana, es de ${ix(z, 'NDVI').toFixed(2)}. Eso significa: ${classify('NDVI', ix(z, 'NDVI')).toLowerCase()}. El dato viene de la imagen de Sentinel-2 del ${fecha(z.indices.scene.date)}.`
-    + (z.anomaly ? ` Comparado con la misma época de años anteriores, hay ${pc(z.anomaly.zone.NDVI.pct)} vigor de lo normal.` : ''),
-  humedad: z => z.indices && `La humedad de la vegetación, medida con el índice NDMI en una escala de menos uno a uno, donde los valores negativos indican plantas secas, es de ${ix(z, 'NDMI').toFixed(2)}: ${classify('NDMI', ix(z, 'NDMI')).toLowerCase()}. El índice de agua superficial, NDWI, es de ${ix(z, 'NDWI').toFixed(2)}: ${classify('NDWI', ix(z, 'NDWI')).toLowerCase()}. Imagen de Sentinel-2 del ${fecha(z.indices.scene.date)}.`,
-  suelo: z => z.indices && `El índice de suelo desnudo, BSI, que va de menos uno a uno y sube cuando hay más tierra expuesta, es de ${ix(z, 'BSI').toFixed(2)}: ${classify('BSI', ix(z, 'BSI')).toLowerCase()}. El índice SAVI, que mide la vegetación descontando el brillo del suelo, es de ${ix(z, 'SAVI').toFixed(2)}: vegetación ${classify('SAVI', ix(z, 'SAVI')).toLowerCase()}.`,
-  calor: z => z.heat && `La temperatura de la superficie del terreno, que no es la del aire, medida por ${z.heat.scene.sat} el ${fecha(z.heat.scene.date)} a media mañana, es de ${z.heat.now.mean.toFixed(1)} grados Celsius en promedio, con un punto máximo de ${z.heat.now.max.toFixed(1)} grados.`
-    + (z.heat.diff != null ? ` Es ${Math.abs(z.heat.diff).toFixed(1)} grados ${z.heat.diff >= 0 ? 'más caliente' : 'más fresca'} que el promedio de la misma época en ${z.heat.base.map(b => b.year).join(', ')}. La temperatura del terreno cambia mucho de un día a otro, así que tómalo como referencia.` : ' No encontré años anteriores sin nubes para compararla.'),
+  vegetacion: z => z.indices && `La vegetación está así: ${classify('NDVI', ix(z, 'NDVI')).toLowerCase()}. Su vigor, que se mide con el índice NDVI, es de ${ix(z, 'NDVI').toFixed(2)} en una escala donde cero es suelo sin plantas y uno es vegetación muy densa.`
+    + (z.anomaly ? ` Comparado con la misma época de años anteriores, hay ${pc(z.anomaly.zone.NDVI.pct)} vigor de lo normal.` : '') + ` El dato es de la imagen del satélite Sentinel-2 del ${fecha(z.indices.scene.date)}.`,
+  humedad: z => z.indices && `La humedad de las plantas está así: ${classify('NDMI', ix(z, 'NDMI')).toLowerCase()}. Se mide con el índice NDMI, que aquí es de ${ix(z, 'NDMI').toFixed(2)}; los valores negativos indican plantas secas y los positivos, plantas con agua. En cuanto al agua sobre el terreno: ${classify('NDWI', ix(z, 'NDWI')).toLowerCase()}, con un índice NDWI de ${ix(z, 'NDWI').toFixed(2)}. El dato es de la imagen del satélite Sentinel-2 del ${fecha(z.indices.scene.date)}.`,
+  suelo: z => z.indices && `El suelo está así: ${classify('BSI', ix(z, 'BSI')).toLowerCase()}. Se mide con el índice de suelo desnudo, BSI, que aquí es de ${ix(z, 'BSI').toFixed(2)}; sube cuando hay más tierra expuesta y baja cuando hay más plantas. La cobertura vegetal, descontando el brillo del suelo, es ${classify('SAVI', ix(z, 'SAVI')).toLowerCase()}, con un índice SAVI de ${ix(z, 'SAVI').toFixed(2)}.`,
+  calor: z => z.heat && `El terreno está a ${z.heat.now.mean.toFixed(1)} grados Celsius en promedio, y su punto más caliente llega a ${z.heat.now.max.toFixed(1)} grados. Es la temperatura del suelo, no la del aire, medida por el satélite ${z.heat.scene.sat} el ${fecha(z.heat.scene.date)} a media mañana.`
+    + (z.heat.diff != null ? ` Está ${Math.abs(z.heat.diff).toFixed(1)} grados ${z.heat.diff >= 0 ? 'más caliente' : 'más fresco'} que lo normal para esta época, comparado con ${z.heat.base.map(b => b.year).join(', ')}. Tómalo como referencia, porque la temperatura del terreno cambia mucho de un día a otro.` : ' No encontré años anteriores sin nubes para compararla.'),
   incendios: z => {
     const t = [];
     if (z.anomaly) { const d = z.anomaly.zone.NBR.mean - z.anomaly.zone.NBR.now; t.push(`El índice de quema, NBR, que baja cuando la vegetación se quema, es de ${z.anomaly.zone.NBR.now.toFixed(2)}, frente a ${z.anomaly.zone.NBR.mean.toFixed(2)} que es lo normal en esta época. La diferencia es de ${d.toFixed(2)}: ${burn(d)}.`); }
@@ -171,7 +171,73 @@ const P = {
     return t.join(' ');
   },
 };
-export function explain(z, tema) { return `${z.name}. ${P[tema](z) || 'No hay datos suficientes para este tema.'}${Object.values(z.warn || {}).length ? ` Aviso: ${Object.values(z.warn).join(' ')}` : ''}`; }
+// Interpretación: después de los números, Terra explica qué quieren decir en la práctica
+const vsNormal = pct => pct <= -15 ? ' Además, está claramente más débil que en años anteriores, lo que puede deberse a sequía, incendio, tala o un cambio en el uso del suelo; conviene revisarla.'
+  : pct <= -5 ? ' Está un poco por debajo de lo habitual, así que conviene vigilarla.' : pct < 5 ? ' Se comporta igual que en años anteriores.' : ' Está más verde de lo habitual, normalmente por lluvias recientes o por crecimiento.';
+const Q = {
+  vegetacion: z => { const v = ix(z, 'NDVI');
+    return (v < 0.1 ? 'aquí casi no hay plantas: es suelo, roca, zona urbana o agua.' : v < 0.2 ? 'hay muy pocas plantas; es terreno casi descubierto, como en zonas áridas, urbanas o recién cosechadas.'
+      : v < 0.4 ? 'las plantas son pocas o están débiles; puede ser matorral, pastizal seco, un cultivo que apenas empieza o vegetación con falta de agua.'
+      : v < 0.6 ? 'hay una cubierta de plantas en estado aceptable, como pastizales verdes, cultivos en crecimiento o bosque abierto.' : 'la vegetación está densa y sana, como un bosque o un cultivo en pleno desarrollo.')
+      + (z.anomaly ? vsNormal(z.anomaly.zone.NDVI.pct) : ''); },
+  humedad: z => { const v = ix(z, 'NDMI');
+    return (v < -0.2 ? 'las plantas tienen muy poca agua, o casi no hay plantas; con el terreno así de seco, un fuego se propagaría con más facilidad.'
+      : v < 0 ? 'a las plantas les está faltando agua; si sigue así pueden secarse y arder con más facilidad.' : v < 0.2 ? 'las plantas tienen agua suficiente por ahora y no hay señales de sequía fuerte.' : 'las plantas están bien hidratadas y no hay señales de sequía.')
+      + (ix(z, 'NDWI') >= 0 ? ' También hay agua o terreno encharcado en parte de la zona.' : ''); },
+  suelo: z => { const v = ix(z, 'BSI');
+    return v < -0.1 ? 'el terreno está protegido por plantas o por agua, así que hay poco riesgo de erosión.' : v < 0.05 ? 'la mayor parte del terreno está cubierta y solo hay pocas áreas descubiertas.'
+      : v < 0.2 ? 'hay partes del terreno sin plantas, y esas áreas son más vulnerables a que la lluvia y el viento se lleven el suelo.'
+      : 'gran parte del terreno está descubierta; puede ser zona urbana, parcelas sin sembrar, minería o suelo degradado, y es vulnerable a la erosión.'; },
+  calor: z => { const d = z.heat.diff, t = z.heat.now.mean;
+    return d == null ? (t >= 45 ? 'la superficie está muy caliente, algo típico de suelo desnudo, asfalto o terreno seco bajo el sol.' : t >= 30 ? 'la superficie está caliente, pero sin años anteriores no puedo decir si es normal.' : 'la superficie no está especialmente caliente.')
+      : d >= 4 ? 'el terreno está bastante más caliente de lo habitual; eso seca la vegetación y aumenta el riesgo de incendio.' : d >= 1.5 ? 'el terreno está algo más caliente de lo habitual, sin llegar a ser alarmante.'
+      : d > -1.5 ? 'la temperatura del terreno es normal para esta época.' : 'el terreno está más fresco de lo habitual, normalmente por lluvias recientes o porque hay más vegetación.'; },
+  incendios: z => { const d = z.anomaly ? z.anomaly.zone.NBR.mean - z.anomaly.zone.NBR.now : null;
+    if (z.fires) return 'puede haber fuego activo en este momento dentro de la zona; conviene confirmarlo con Protección Civil o con las autoridades forestales.';
+    const no = z.fires === 0 ? ' Ahora mismo no hay focos de calor activos.' : '';   // si no se pudo consultar FIRMS, no se afirma nada
+    return d == null ? (no ? 'no hay fuego activo en este momento, aunque no pude comparar con años anteriores para buscar áreas quemadas.' : 'no tengo datos suficientes para saber si hubo un incendio.')
+      : d < 0.1 ? 'no hay indicios de un incendio reciente en la zona.' + no
+      : d < 0.27 ? 'la vegetación perdió algo de verdor; puede ser una quema leve o simplemente que está más seca.' + no
+      : 'es probable que una parte de la zona se haya quemado recientemente; los sectores marcados en el mapa muestran dónde.' + no; },
+  radar: z => { const n = z.nisar; if (!n?.count) return 'todavía no se puede usar el radar para esta zona.'; if (n.partial || n.change == null) return 'ya hay imagen de radar, pero aún no se puede medir si el terreno cambió.';
+    return n.change <= -15 ? 'entre las dos fechas probablemente se perdió vegetación o el terreno se secó.' : n.change >= 15 ? 'entre las dos fechas probablemente aumentó la humedad, hubo agua bajo la vegetación o esta creció.' : 'el terreno se mantiene estable y no se ven cambios físicos importantes.'; },
+  completo: z => { const k = z.anomaly?.level.key;
+    return (k === 'severa' ? 'la zona está en mal estado comparada con años anteriores y merece atención.' : k === 'moderada' ? 'la zona muestra un deterioro respecto a lo normal que conviene vigilar.'
+      : k === 'alta' ? 'la zona está más verde de lo habitual, lo cual es buena señal.' : k === 'normal' ? 'la zona se encuentra en condiciones normales para esta época del año.' : 'solo tengo una parte de los datos, así que no puedo dar un veredicto general.')
+      + (z.fires ? ' Lo más urgente son los focos de calor activos, que habría que confirmar.' : '') + (z.heat?.diff >= 4 ? ' También destaca que el terreno está más caliente de lo normal.' : ''); },
+};
+const tell = (t, z) => { const p = P[t](z); if (!p) return p; let q = ''; try { q = Q[t]?.(z) || ''; } catch {} return q ? `${p} Esto quiere decir que ${q}` : p; };
+// Tabla de datos clave: indicador, valor y qué significa, en palabras sencillas
+function keyRows(z) {
+  const r = [], cap = t => t.charAt(0).toUpperCase() + t.slice(1);
+  if (z.indices) {
+    r.push(['Vigor de la vegetación (NDVI, de -1 a 1)', ix(z, 'NDVI').toFixed(2), classify('NDVI', ix(z, 'NDVI'))]);
+    if (z.anomaly) r.push(['Vegetación frente a lo normal en esta época', `${sg(z.anomaly.zone.NDVI.pct)} %`, z.anomaly.level.label]);
+    r.push(['Humedad de las plantas (NDMI, de -1 a 1)', ix(z, 'NDMI').toFixed(2), classify('NDMI', ix(z, 'NDMI'))]);
+    r.push(['Agua en la superficie (NDWI, de -1 a 1)', ix(z, 'NDWI').toFixed(2), classify('NDWI', ix(z, 'NDWI'))]);
+    r.push(['Suelo desnudo (BSI, de -1 a 1)', ix(z, 'BSI').toFixed(2), classify('BSI', ix(z, 'BSI'))]);
+  }
+  if (z.anomaly) { const d = z.anomaly.zone.NBR.mean - z.anomaly.zone.NBR.now; r.push(['Señal de quema (caída del índice NBR)', d.toFixed(2), cap(burn(d))]); }
+  if (z.fires != null) r.push(['Focos de calor activos (NASA FIRMS)', String(z.fires), z.fires ? 'Hay puntos calientes; no confirman por sí solos un incendio' : 'Sin puntos calientes dentro del polígono']);
+  if (z.heat) r.push(['Temperatura de la superficie', `${z.heat.now.mean.toFixed(1)} °C (máx. ${z.heat.now.max.toFixed(1)} °C)`, z.heat.diff == null ? 'Sin años anteriores para comparar' : `${Math.abs(z.heat.diff).toFixed(1)} °C ${z.heat.diff >= 0 ? 'más caliente' : 'más fresco'} que lo normal`]);
+  if (z.nisar) r.push(['Radar NISAR', z.nisar.change != null ? `${sg(z.nisar.change)} % de señal` : `${z.nisar.count || 0} pasadas`, z.nisar.change != null ? cap(radarReading(z.nisar.change)) + ' (estimación)' : z.nisar.count ? 'Aún sin pasada anterior comparable' : 'Sin pasadas publicadas sobre la zona']);
+  return r;
+}
+// Datos para el reporte PDF de una zona. Si aún no se ha analizado, hace el análisis completo en ese momento.
+export async function reportData(id) {
+  const z = getZone(id) || activeZone();
+  if (!z) return null;
+  if (!z.done?.completo) await analyze(z.id, 'completo');
+  z.fires = hooks.firesIn?.(z.ring) ?? z.fires;   // focos de calor al momento de generar el reporte
+  const sections = [['Resumen de anomalías', tell('completo', z)], ...['vegetacion', 'humedad', 'suelo', 'calor', 'incendios', 'radar'].map(t => [TEMAS[t].label, tell(t, z)])].filter(s => s[1]);
+  const fuentes = ['Sentinel-2 (ESA, vía Microsoft Planetary Computer)'];
+  if (z.heat) fuentes.push(`${z.heat.scene.sat} térmico (NASA/USGS)`);
+  if (z.fires != null) fuentes.push('NASA FIRMS (focos de calor)');
+  if (z.nisar) fuentes.push('NISAR (NASA-ISRO, vía ASF DAAC)');
+  return { nombre: z.name, tipo: z.kind, area: fmtKm2(z.area), lon: z.ring.reduce((a, p) => a + p[0], 0) / z.ring.length, lat: z.ring.reduce((a, p) => a + p[1], 0) / z.ring.length,
+    nivel: z.anomaly?.level.label ?? null, claves: keyRows(z), sections, avisos: Object.values(z.warn || {}), fuentes };
+}
+export function explain(z, tema) { return `${z.name}. ${tell(tema, z) || 'No hay datos suficientes para este tema.'}${Object.values(z.warn || {}).length ? ` Aviso: ${Object.values(z.warn).join(' ')}` : ''}`; }
 function dataOf(z, tema) {
   const d = {};
   if (z.indices && tema !== 'calor' && tema !== 'radar') d.indices = Object.fromEntries(Object.keys(INDICES).map(k => [k, +ix(z, k).toFixed(3)])), d.fecha_sentinel2 = z.indices.scene.date;
@@ -196,7 +262,7 @@ function resultsHtml(z) {
   if (!z.tema || !z.done[z.tema]) return h;
   const t = z.tema, a = z.anomaly;
   if ((t === 'completo' || t === 'incendios') && a) h += `<div class="anom" style="--c:${a.level.color}"><b>${esc(a.level.label)}</b></div>`;
-  h += `<p class="zone-say">${esc(P[t](z) || 'No hay datos suficientes para este tema.')}</p>`;
+  h += `<p class="zone-say">${esc(tell(t, z) || 'No hay datos suficientes para este tema.')}</p>`;
   Object.values(z.warn || {}).forEach(w => (h += `<p class="note err">${esc(w)}</p>`));
   if (KEYS[t] && z.indices) {
     const s = z.indices.stats;

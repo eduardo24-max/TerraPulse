@@ -40,6 +40,11 @@ const run = (name, cmd, args, cwd) => {
 
 if (python) {
   console.log(`[api] Usando ${python}`);
+  // Voz natural de Terra: se instala sola la primera vez (librería edge-tts, sin clave)
+  if (spawnSync(python, ['-c', 'import edge_tts'], { stdio: 'ignore' }).status !== 0) {
+    console.log('[setup] Instalando la voz natural de Terra (edge-tts)…');
+    spawnSync(python, ['-m', 'pip', 'install', '-q', 'edge-tts'], { stdio: 'inherit' });
+  }
   run('api', python, ['-m', 'uvicorn', 'main:app', '--host', '127.0.0.1', '--port', '8000'], backend);
 } else {
   console.warn('[api] No encontré Python con las dependencias del backend. Ejecuta: npm run setup');

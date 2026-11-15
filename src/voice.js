@@ -1,14 +1,14 @@
 // Terra · asistente de voz de TerraPulse. No abre ningún panel: el botón flotante se anima según escucha,
-// piensa o responde. Usa Gemini Live si el backend tiene GEMINI_API_KEY; si no, la voz del navegador.
+// piensa o responde. Usa Gemini Live si el backend tiene GEMINI_API_KEY; si no, la voz neuronal del backend (sin clave) y el oído del navegador; ElevenLabs es opcional.
 // Ambos motores solo pueden actuar con las herramientas autorizadas de assistant/tools.js.
 import { conn } from './connection.js';
 import { execute } from './assistant/tools.js';
 import { createLocalEngine } from './assistant/local.js';
-import { createGeminiEngine, geminiAvailable } from './assistant/gemini.js';
+import { createGeminiEngine, voiceConfig } from './assistant/gemini.js';
 
 const $ = id => document.getElementById(id);
 const YES = /^\s*(si|sí|confirmo|confirmar|adelante|hazlo|de acuerdo|ok|claro|acepto|aceptar)\b/i, NO = /^\s*(no|cancela|cancelar|mejor no|detente|alto)\b/i;
-let engine = null, pending = null, abortFn = null, mode = null, toastT = null;
+let engine = null, pending = null, abortFn = null, mode = null, toastT = null, eleven = false, tts = false;
 const history = [];   // registro interno (no se muestra): útil para depurar y para lectores de pantalla
 
 const LABEL = { idle: 'Hablar con Terra, asistente de voz (Alt+J)', connecting: 'Terra se está conectando', listening: 'Terra te está escuchando. Pulsa para apagarla',
@@ -60,10 +60,12 @@ const ui = {
   setAbort(fn) { abortFn = fn; },
 };
 
-function useLocal() { engine?.stop(); mode = 'local'; engine = createLocalEngine(cb); }
+function useLocal() { engine?.stop(); mode = 'local'; engine = createLocalEngine(cb, { base: conn.base, eleven, tts }); }
 async function pickEngine() {
   if (engine) return;
-  if (conn.base != null && await geminiAvailable(conn.base)) { mode = 'gemini'; engine = createGeminiEngine(conn.base, cb); }
+  const cfg = conn.base != null ? await voiceConfig(conn.base) : {};
+  eleven = !!cfg.elevenlabs; tts = !!cfg.tts;
+  if (cfg.gemini) { mode = 'gemini'; engine = createGeminiEngine(conn.base, cb); }
   else useLocal();
 }
 function cancelAll() { pending?.(false); abortFn?.(); engine?.interrupt?.(); try { window.TerraPulse?.app?.cancelDraw(); } catch {} $('asstAnnounce').textContent = 'Cancelado.'; }
@@ -87,4 +89,4 @@ setState('idle');
 
 // Gancho de pruebas y accesibilidad: enviar texto a Terra y leer el registro interno
 window.TerraPulse ??= {};
-window.TerraPulse.terra = { ask: async t => { await pickEngine(); return engine.sendText(t); }, history, mode: () => mode, toggle };
+window.TerraPulse.terra = { ask: async t => { await pickEngine(); return engine.sendText(t); }, history, mode: () => (mode === 'local' ? engine?.mode : mode), toggle };

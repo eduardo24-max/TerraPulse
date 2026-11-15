@@ -7,3 +7,4 @@ python-dotenv
 psycopg2-binary
 asf_search
 earthengine-api
+edge-tts

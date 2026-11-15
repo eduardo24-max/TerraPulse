@@ -1,9 +1,10 @@
 // Motor Gemini Live: conversación de voz en tiempo real por WebSocket con token temporal del backend.
 // Micrófono → PCM 16 kHz → Gemini; audio de respuesta PCM 24 kHz → altavoz. Las acciones pasan por tools.js.
 import { declarations } from './tools.js';
+import { farFieldChain, MIC } from './audio.js';
 
 const SYSTEM = `Eres Terra, la asistente de voz de TerraPulse, un visor que vigila los cambios de la Tierra con datos de satélites de la NASA, la ESA y el radar NISAR.
-PERSONALIDAD: amable, paciente y clara. Hablas siempre en español de México, con frases cortas y naturales, como una guía que explica a alguien que no es experto.
+PERSONALIDAD: cálida, cercana, paciente y clara; conversas con naturalidad, como una amiga experta, sin sonar a robot ni repetir las mismas frases. Si el usuario te interrumpe, deja lo que estabas diciendo y atiende de inmediato lo nuevo que pide, sin volver a presentarte. Hablas siempre en español de México, con frases cortas y naturales, como una guía que explica a alguien que no es experto.
 CLARIDAD CON LOS NÚMEROS: nunca digas un número suelto. Di siempre qué mide, en qué unidad o escala está y qué significa. Ejemplo: "el vigor de la vegetación, que se mide con el índice NDVI de menos uno a uno, es de 0.42, lo que indica vegetación moderada". Redondea a dos decimales como máximo. Las fechas dilas completas (6 de noviembre de 2026).
 CÓMO SE TRABAJA EN ESTE SITIO: 1) primero se encierra una zona con un polígono (delimitar_zona: alrededor de un lugar con un radio, el área visible, o "manual" para que el usuario lo dibuje con clics y doble clic). 2) Después se pregunta qué se quiere saber de esa zona y se usa analizar_zona con el tema: vegetacion, humedad, calor (temperatura de la superficie), incendios, suelo, radar (NISAR) o completo (todas las anomalías). Si piden anomalías o datos y no hay zona encerrada, explica con amabilidad que primero hay que encerrarla y ofrece trazarla.
 Después de encerrar una zona, pregunta qué quiere saber de ella. analizar_zona devuelve una "explicacion": úsala como base de tu respuesta, sin inventar datos ni añadir cifras que no vengan ahí.
@@ -21,21 +22,23 @@ const WORKLET = `class Cap extends AudioWorkletProcessor{constructor(){super();t
 process(i){const c=i[0]&&i[0][0];if(c){const r=sampleRate/16000;for(let k=0;k<c.length/r;k++){const s=Math.max(-1,Math.min(1,c[Math.floor(k*r)]));this.b.push(s<0?s*32768:s*32767)}
 if(this.b.length>=1600){const a=Int16Array.from(this.b);this.b=[];this.port.postMessage(a.buffer,[a.buffer])}}return true}}registerProcessor('cap',Cap);`;
 
-export async function geminiAvailable(base) {
-  try { const r = await fetch(`${base}/api/v1/voice/config`, { signal: AbortSignal.timeout(3000) }); return r.ok && (await r.json()).gemini; } catch { return false; }
+export async function voiceConfig(base) {
+  try { const r = await fetch(`${base}/api/v1/voice/config`, { signal: AbortSignal.timeout(3000) }); return r.ok ? await r.json() : {}; } catch { return {}; }
 }
 
 let greeted = false;   // la presentación se dice una sola vez
 export function createGeminiEngine(base, cb) {
   let ws = null, micCtx = null, micStream = null, node = null, outCtx = null, playHead = 0, sources = [], on = false, inBuf = '', outBuf = '';
 
+  let og = null;
+  const outGain = () => { if (!og) { og = outCtx.createGain(); og.gain.value = 1.7; const c = outCtx.createDynamicsCompressor(); c.threshold.value = -18; c.ratio.value = 4; og.connect(c).connect(outCtx.destination); } return og; };
   function stopAudioOut() { sources.forEach(s => { try { s.stop(); } catch {} }); sources = []; playHead = 0; }
   function play(buf) {
     outCtx ??= new AudioContext({ sampleRate: 24000 });
     const pcm = new Int16Array(buf), f = new Float32Array(pcm.length);
     for (let i = 0; i < pcm.length; i++) f[i] = pcm[i] / 32768;
     const ab = outCtx.createBuffer(1, f.length, 24000); ab.copyToChannel(f, 0);
-    const src = outCtx.createBufferSource(); src.buffer = ab; src.connect(outCtx.destination);
+    const src = outCtx.createBufferSource(); src.buffer = ab; src.connect(outGain());
     playHead = Math.max(playHead, outCtx.currentTime + 0.03); src.start(playHead); playHead += ab.duration;
     sources.push(src); src.onended = () => { sources = sources.filter(x => x !== src); if (!sources.length) cb.state(on ? 'listening' : 'idle'); };
     cb.state('speaking');
@@ -43,12 +46,13 @@ export function createGeminiEngine(base, cb) {
   const send = o => ws?.readyState === 1 && ws.send(JSON.stringify(o));
 
   async function startMic() {
-    micStream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+    micStream = await navigator.mediaDevices.getUserMedia(MIC);
     micCtx = new AudioContext();
     await micCtx.audioWorklet.addModule(URL.createObjectURL(new Blob([WORKLET], { type: 'text/javascript' })));
     node = new AudioWorkletNode(micCtx, 'cap');
     node.port.onmessage = e => send({ realtimeInput: { audio: { data: b64(e.data), mimeType: 'audio/pcm;rate=16000' } } });
-    micCtx.createMediaStreamSource(micStream).connect(node);
+    const mute = micCtx.createGain(); mute.gain.value = 0;
+    farFieldChain(micCtx, micStream, 2.5).connect(node); node.connect(mute).connect(micCtx.destination);   // voces lejanas más claras
   }
   function stopMic() { try { node?.disconnect(); micStream?.getTracks().forEach(t => t.stop()); micCtx?.close(); } catch {} node = micStream = micCtx = null; }
 
