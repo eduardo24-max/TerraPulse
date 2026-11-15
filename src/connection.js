@@ -16,6 +16,13 @@ async function probe(url, ms = 3000) {
 }
 
 export async function detectConnection() {
+  const host = (typeof location !== 'undefined' ? location.hostname : '') || '';
+  const isLocal = host === 'localhost' || host === '127.0.0.1' || host === '';
+  if (!isLocal) {
+    // Despliegue estático (p. ej. GitHub Pages): no hay backend local.
+    Object.assign(conn, { mode: 'offline', base: '', tilesViaApi: false });
+    return conn;
+  }
   const p = await probe('/api/v1/health');
   if (p) Object.assign(conn, { mode: 'proxy', base: '', tilesViaApi: p === 'ok', oldBackend: p === 'old' });
   else if (await probe(`${DIRECT}/api/v1/health`)) Object.assign(conn, { mode: 'direct', base: DIRECT, tilesViaApi: true });
