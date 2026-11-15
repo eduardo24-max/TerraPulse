@@ -162,6 +162,6 @@ export const SAT_CATALOG = [
 
 let cache;
 export async function loadSources() {
-  if (!cache) cache = await fetch('/data/fuentes.json').then(r => r.json());
+  if (!cache) cache = await fetch(`${import.meta.env.BASE_URL}data/fuentes.json`).then(r => r.json());
   return cache;
 }
