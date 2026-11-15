@@ -21,6 +21,8 @@ Además, incorpora a **Terra**, una asistente virtual de voz en español que fac
 
 El objetivo de TerraPulse es transformar la información científica obtenida desde el espacio en conocimiento accesible, comprensible y útil para la toma de decisiones ambientales.
 
+![Vista general de TerraPulse y eventos en vivo](captures/Vista%20General.png)
+
 ## Reto seleccionado
 
 **Reto 5: Dancing with the SARs**
@@ -61,6 +63,8 @@ El sistema integra:
 - Asistente virtual de voz en español.
 - Generación de reportes en PDF.
 
+![Selección de zona de estudio y globo interactivo](captures/Zona%20de%20estudio.png)
+
 ## Funcionamiento
 
 El análisis de TerraPulse se desarrolla mediante las siguientes etapas:
@@ -88,6 +92,8 @@ La zona seleccionada puede dividirse en nueve sectores para facilitar la identif
 
 Los indicadores se interpretan en conjunto, ya que una variación individual no confirma por sí misma la presencia de un fenómeno ambiental.
 
+![Panel de análisis detallado por indicadores y asistente Terra](captures/panel%20de%20analisis.png)
+
 ## Fuentes de datos satelitales
 
 TerraPulse integra información procedente de diferentes agencias y plataformas de observación de la Tierra.
@@ -110,6 +116,8 @@ TerraPulse integra información procedente de diferentes agencias y plataformas 
 ## Asistente virtual Terra
 
 Terra es la asistente virtual integrada en la plataforma. Permite interactuar mediante voz en español para facilitar la consulta de información geográfica y ambiental.
+
+![Botón activo del asistente de voz Terra en la interfaz](captures/Asistente%20Virtual.png)
 
 ### Funcionalidades
 
@@ -142,6 +150,8 @@ La asistente utiliza una lista controlada de acciones disponibles dentro del sis
 - 📄 Generación de reportes en PDF.
 - 📈 Visualización de anomalías ambientales.
 - 🌎 Consulta de información de diferentes regiones del planeta.
+
+![Herramienta de comparación temporal de imágenes satelitales](captures/Comparacion%20Temporal.png)
 
 ## Tecnologías utilizadas
 
