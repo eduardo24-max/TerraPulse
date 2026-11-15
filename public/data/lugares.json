@@ -1,0 +1,19 @@
+[
+  {
+    "id": "el-arenal",
+    "demo": true,
+    "lugar": "El Arenal, Durango",
+    "municipio": "Durango",
+    "pais": "México",
+    "fecha_inicio": "2026-06-01",
+    "fecha_fin": "2026-10-31",
+    "hectareas_perdidas": 120,
+    "probabilidad_incendio": 78,
+    "causa_probable": "incendio",
+    "riesgo": "alto",
+    "coordenadas": [24.02, -104.67],
+    "fuentes": ["NISAR GSLC", "FIRMS VIIRS NOAA-20", "GOES-19"],
+    "imagen_antes": "tiles/antes.png",
+    "imagen_despues": "tiles/despues.png"
+  }
+]

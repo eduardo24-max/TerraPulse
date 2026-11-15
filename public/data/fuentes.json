@@ -1,0 +1,7 @@
+[
+  {"id":"goes","nombre":"GOES-19 / NOAA","tipo":"Térmico geoestacionario","resolucion":"2 km (IR)","revisita":"~10 min","portal":"https://www.ncei.noaa.gov/","fase":2},
+  {"id":"firms","nombre":"FIRMS VIIRS NOAA-20 / NOAA-21 (NRT)","tipo":"Anomalías térmicas","resolucion":"375 m","revisita":"Varias pasadas diarias","portal":"https://firms.modaps.eosdis.nasa.gov/","fase":2},
+  {"id":"s1","nombre":"Sentinel-1 / ESA","tipo":"SAR banda C","resolucion":"~10 m (IW)","revisita":"6–12 días","portal":"https://dataspace.copernicus.eu/","fase":2},
+  {"id":"nisar","nombre":"NISAR / NASA-ISRO","tipo":"SAR bandas L y S (GSLC L2)","resolucion":"3–10 m","revisita":"12 días (≈6 asc+desc)","portal":"https://search.asf.alaska.edu/","fase":2},
+  {"id":"gibs","nombre":"NASA GIBS (MODIS / VIIRS)","tipo":"Imagen óptica diaria y NDVI","resolucion":"250 m – 1 km","revisita":"Diaria","portal":"https://earthdata.nasa.gov/","fase":1}
+]

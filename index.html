@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>TerraPulse — La Tierra en movimiento, vista desde el espacio</title>
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <script>try{document.documentElement.dataset.theme=localStorage.getItem('fp-theme')||'dark'}catch{}</script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.121.0/Build/Cesium/Widgets/widgets.css" />
+  <script src="https://cdn.jsdelivr.net/npm/cesium@1.121.0/Build/Cesium/Cesium.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-water" viewBox="0 0 24 24"><path d="M2 6c2 0 2-1.5 4-1.5S8 6 10 6s2-1.5 4-1.5S16 6 18 6s2-1.5 4-1.5"/><path d="M2 12c2 0 2-1.5 4-1.5s2 1.5 4 1.5 2-1.5 4-1.5 2 1.5 4 1.5 2-1.5 4-1.5"/><path d="M2 18c2 0 2-1.5 4-1.5s2 1.5 4 1.5 2-1.5 4-1.5 2 1.5 4 1.5 2-1.5 4-1.5"/></symbol>
+    <symbol id="i-tree" viewBox="0 0 24 24"><path d="m12 2-6 8h3l-4 6h14l-4-6h3Z"/><path d="M12 16v6"/></symbol>
+    <symbol id="i-sprout" viewBox="0 0 24 24"><path d="M12 22V11"/><path d="M12 11C12 6 8 4 3 4c0 5 4 7 9 7Z"/><path d="M12 13c0-4 3-6 8-6 0 4-3 6-8 6Z"/></symbol>
+    <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 2.7S5 10 5 14.5a7 7 0 0 0 14 0C19 10 12 2.7 12 2.7Z"/></symbol>
+    <symbol id="i-snow" viewBox="0 0 24 24"><path d="M12 2v20M4.9 7l14.2 10M4.9 17 19.1 7"/><path d="m9 4 3 2 3-2M9 20l3-2 3 2"/></symbol>
+    <symbol id="i-quake" viewBox="0 0 24 24"><path d="M2 12h3l2-5 3 10 3-14 3 12 2-3h4"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 2 10 5-10 5L2 7Z"/><path d="m2 12 10 5 10-5"/><path d="m2 17 10 5 10-5"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></symbol>
+    <symbol id="i-poly" viewBox="0 0 24 24"><path d="M5 4l14 3-3 13-11-4Z"/><circle cx="5" cy="4" r="1.6"/><circle cx="19" cy="7" r="1.6"/><circle cx="16" cy="20" r="1.6"/><circle cx="5" cy="16" r="1.6"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4v16l13-8Z" fill="currentColor"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M7 4h3v16H7zM14 4h3v16h-3z" fill="currentColor"/></symbol>
+    <symbol id="i-prev" viewBox="0 0 24 24"><path d="M18 6 9 12l9 6zM6 6v12"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24"><path d="m6 6 9 6-9 6zM18 6v12"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
+    <symbol id="i-sat" viewBox="0 0 24 24"><path d="M13 7 9 3 5 7l4 4"/><path d="m17 11 4 4-4 4-4-4"/><path d="m8 12 4 4 6-6-4-4Z"/><path d="m16 8 3-3"/><path d="M9 21a6 6 0 0 0-6-6"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+    <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></symbol>
+    <symbol id="i-split" viewBox="0 0 24 24"><path d="m8 7-5 5 5 5M16 7l5 5-5 5"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  </svg>
+  <section class="globe-wrap">
+    <div id="cesiumContainer"></div>
+    <div id="splitter" hidden><span><svg class="ic" aria-hidden="true"><use href="#i-split"/></svg></span></div>
+    <div id="compareLabels" hidden>
+      <div class="lbl left" id="lblLeft"></div>
+      <div class="lbl right" id="lblRight"></div>
+    </div>
+  </section>
+
+  <header class="topbar glass">
+    <div class="brand">
+      <img class="logo" src="/logo.png" alt="Logo TerraPulse" />
+      <div class="brand-txt">TerraPulse<small>La Tierra en movimiento, vista desde el espacio</small></div>
+    </div>
+    <form id="searchForm" class="search" autocomplete="off">
+      <span class="search-ico" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg></span>
+      <input id="searchInput" placeholder="Buscar país, región o coordenadas..." />
+      <button type="submit">Buscar</button>
+      <ul id="searchResults" class="results glass" hidden></ul>
+    </form>
+    <div class="top-actions">
+      <button id="btnArenal" class="chip" title="Analizar El Arenal, Durango con datos en vivo">El Arenal</button>
+      <button id="btnTheme" class="icon-btn theme-toggle" title="Cambiar tema" aria-label="Cambiar tema"><span class="sun"><svg class="ic" aria-hidden="true"><use href="#i-sun"/></svg></span><span class="moon"><svg class="ic" aria-hidden="true"><use href="#i-moon"/></svg></span><i></i></button>
+      <button id="btnPulse" class="chip pulse" title="Terra, asistente de voz (Alt+J)" aria-pressed="false"><svg class="ic" aria-hidden="true"><use href="#i-pulse"/></svg> Terra</button>
+      <button id="btnReports" class="chip" title="Descargar reporte PDF del análisis o lugar seleccionado"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg> <span class="lbl-txt">Reportes</span></button>
+      <button id="btnSettings" class="icon-btn" title="Configuración" aria-expanded="false" aria-controls="settingsPanel"><svg class="ic" aria-hidden="true"><use href="#i-settings"/></svg></button>
+    </div>
+  </header>
+
+  <nav id="moduleBar" class="module-bar glass" aria-label="Módulos de monitoreo">
+    <button type="button" data-mod="agua" title="Agua"><svg class="ic" aria-hidden="true"><use href="#i-water"/></svg><span>Agua</span></button>
+    <button type="button" data-mod="bosques" title="Bosques"><svg class="ic" aria-hidden="true"><use href="#i-tree"/></svg><span>Bosques</span></button>
+    <button type="button" data-mod="agricultura" title="Agricultura"><svg class="ic" aria-hidden="true"><use href="#i-sprout"/></svg><span>Agricultura</span></button>
+    <button type="button" data-mod="suelo" title="Humedad"><svg class="ic" aria-hidden="true"><use href="#i-drop"/></svg><span>Humedad</span></button>
+    <button type="button" data-mod="hielo" title="Hielo"><svg class="ic" aria-hidden="true"><use href="#i-snow"/></svg><span>Hielo</span></button>
+    <button type="button" data-mod="deformacion" title="Deformación"><svg class="ic" aria-hidden="true"><use href="#i-quake"/></svg><span>Deformación</span></button>
+  </nav>
+
+  <aside class="panel left glass" id="panelLeft">
+    <div class="panel-head">
+      <h2><span class="ico"><svg class="ic c-orange" aria-hidden="true"><use href="#i-bell"/></svg></span>Eventos en vivo <span id="alertCount" class="count">0</span></h2>
+      <span class="muted"><span id="alertsUpdated"></span> <button id="evRefresh" class="icon-btn sm-ic" title="Actualizar eventos ahora" aria-label="Actualizar eventos"><svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg></button></span>
+    </div>
+    <div class="ev-filters">
+      <select id="evFilter" aria-label="Tipo de evento"><option value="all">Todos los tipos</option></select>
+      <select id="evSeverity" aria-label="Severidad"><option value="">Toda severidad</option><option value="alta">Alta</option><option value="media">Media</option><option value="baja">Baja</option></select>
+    </div>
+    <label class="ev-inview"><input type="checkbox" id="evInView" checked> Solo la zona visible del mapa <span id="evViewInfo" class="muted"></span></label>
+    <ul id="alertList"><li class="muted">Conectando con el backend…</li></ul>
+    <p class="note"><i id="apiStatus" class="dot-st"></i> Backend <span id="apiBase"></span> · GDACS, NASA FIRMS, EONET e ITS_LIVE · actualización cada 10 min. Una detección térmica no confirma un incendio.</p>
+  </aside>
+  <button class="edge-tab left" id="tabLeft" aria-controls="panelLeft" title="Mostrar/ocultar eventos"><span><svg class="ic c-orange" aria-hidden="true"><use href="#i-bell"/></svg></span><em class="tab-lbl show">Mostrar eventos</em><em class="tab-lbl hide">Ocultar</em><b class="arrow"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></b></button>
+
+  <aside class="panel right glass" id="panelRight">
+    <section class="glass-card collapsed">
+      <button class="card-head" type="button"><span class="hd"><svg class="ic c-red" aria-hidden="true"><use href="#i-pulse"/></svg>Análisis del evento</span><b class="chev"><svg class="ic" aria-hidden="true"><use href="#i-down"/></svg></b></button>
+      <div class="card-body"><div><div id="analysisCard"><p class="muted">Haz clic en un evento del mapa o de la lista para ver su evidencia SAR, la máquina del tiempo y la proyección de riesgo.</p></div></div></div>
+    </section>
+    <section class="glass-card">
+      <button class="card-head" type="button"><span class="hd"><svg class="ic c-cyan" aria-hidden="true"><use href="#i-layers"/></svg>Módulo activo</span><b class="chev"><svg class="ic" aria-hidden="true"><use href="#i-down"/></svg></b></button>
+      <div class="card-body"><div><div id="moduleCard"></div></div></div>
+    </section>
+    <section class="glass-card">
+      <button class="card-head" type="button"><span class="hd"><svg class="ic c-red" aria-hidden="true"><use href="#i-pin"/></svg>Ubicación seleccionada</span><b class="chev"><svg class="ic" aria-hidden="true"><use href="#i-down"/></svg></b></button>
+      <div class="card-body"><div><div id="infoCard"><p class="muted">Selecciona una alerta o busca un lugar.</p></div></div></div>
+    </section>
+    <section class="glass-card">
+      <button class="card-head" type="button"><span class="hd"><svg class="ic c-green" aria-hidden="true"><use href="#i-sprout"/></svg>Zonas e índices de vegetación</span><b class="chev"><svg class="ic" aria-hidden="true"><use href="#i-down"/></svg></b></button>
+      <div class="card-body"><div><div id="zonesCard"></div></div></div>
+    </section>
+    <section class="glass-card">
+      <button class="card-head" type="button"><span class="hd"><svg class="ic c-cyan" aria-hidden="true"><use href="#i-sat"/></svg>Fuentes satelitales</span><b class="chev"><svg class="ic" aria-hidden="true"><use href="#i-down"/></svg></b></button>
+      <div class="card-body"><div>
+        <p class="muted">Toca un satélite para ver en el globo los datos de su API.</p>
+        <div id="satCatalog" class="sat-catalog"></div>
+        <div id="satCtl" class="sat-ctl" hidden>
+          <select id="satLayerSel" aria-label="Producto"></select>
+          <input type="date" id="satDate" aria-label="Fecha" min="1984-01-01">
+          <label class="sat-op">Opacidad <input type="range" id="satAlpha" min="0" max="100" value="85"></label>
+          <p id="satMsg" class="note"></p>
+        </div>
+      </div></div>
+    </section>
+  </aside>
+  <button class="edge-tab right" id="tabRight" aria-controls="panelRight" title="Mostrar/ocultar análisis"><span><svg class="ic c-cyan" aria-hidden="true"><use href="#i-sat"/></svg></span><em class="tab-lbl show">Mostrar análisis</em><em class="tab-lbl hide">Ocultar</em><b class="arrow"><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></b></button>
+
+  <div class="zoom-ctl glass">
+    <button id="zoomIn" aria-label="Acercar"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg></button>
+    <button id="zoomOut" aria-label="Alejar"><svg class="ic" aria-hidden="true"><use href="#i-minus"/></svg></button>
+    <button id="drawBtn" aria-label="Dibujar zona" title="Seleccionar una zona dibujando un polígono"><svg class="ic" aria-hidden="true"><use href="#i-poly"/></svg></button>
+  </div>
+
+  <div id="drawBar" class="draw-bar glass" hidden>
+    <span id="drawMsg">Haz clic en el mapa para marcar los vértices de la zona.</span>
+    <button id="drawUndo" class="ghost sm">Deshacer punto</button>
+    <button id="drawDone" class="primary sm">Terminar zona</button>
+    <button id="drawCancel" class="ghost sm">Cancelar</button>
+  </div>
+
+  <section id="cmpInfo" class="cmp-info glass collapsed" hidden aria-label="Qué estás viendo">
+    <button class="card-head" type="button" id="cmpInfoHead"><span class="hd"><svg class="ic c-cyan" aria-hidden="true"><use href="#i-layers"/></svg><span id="cmpSummary">¿Qué estás viendo?</span></span><b class="chev"><svg class="ic" aria-hidden="true"><use href="#i-down"/></svg></b></button>
+    <div class="cmp-info-body">
+      <div class="cmp-cols"><div id="cmpInfoL"></div><div id="cmpInfoR"></div></div>
+      <label class="sat-op">Opacidad de la comparación <input type="range" id="cmpAlpha" min="20" max="100" value="100"></label>
+      <label class="ev-inview"><input type="checkbox" id="cmpDamage"> Resaltar daño a la vegetación (NASA OPERA DIST, solo en «Landsat + Sentinel-2 · 30 m»)</label>
+      <p id="cmpTip" class="note"></p>
+    </div>
+  </section>
+
+  <div id="player" class="player glass" hidden aria-label="Línea de tiempo animada">
+    <div class="pl-top">
+      <button id="plPrev" class="icon-btn" aria-label="Cuadro anterior"><svg class="ic"><use href="#i-prev"/></svg></button>
+      <button id="plPlay" class="pl-play" aria-label="Reproducir o pausar"><svg class="ic"><use href="#i-play"/></svg></button>
+      <button id="plNext" class="icon-btn" aria-label="Cuadro siguiente"><svg class="ic"><use href="#i-next"/></svg></button>
+      <div class="pl-now"><b id="plDate">—</b><span id="plPhase" class="badge pl-phase" hidden></span><small id="plTitle"></small></div>
+      <select id="plStory" aria-label="Fenómeno"></select>
+      <select id="plProduct" aria-label="Satélite y producto"></select>
+      <label id="plDamageWrap" class="ev-inview pl-damage" hidden><input type="checkbox" id="plDamage" checked> Resaltar daño</label>
+      <select id="plSpeed" aria-label="Velocidad"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
+      <button id="plClose" class="icon-btn" aria-label="Cerrar animación" title="Volver al comparador"><svg class="ic"><use href="#i-x"/></svg></button>
+    </div>
+    <div id="plTrack" class="pl-track"></div>
+    <div class="pl-bottom">
+      <p id="plCaption"></p>
+      <div class="pl-legend"><img id="plLegend" alt="Leyenda de colores" hidden><span id="plSource"></span></div>
+    </div>
+  </div>
+
+  <div class="compare-bar glass">
+    <label>Comparar imágenes</label>
+    <select id="cmpLayer"></select>
+    <select id="cmpPreset" aria-label="Historial rápido" title="Comparar con el pasado">
+      <option value="">Historial…</option><option value="1">Hace 1 año</option><option value="5">Hace 5 años</option>
+      <option value="10">Hace 10 años</option><option value="20">Hace 20 años</option><option value="1990-06-15">Junio de 1990 (Landsat)</option></select>
+    <input type="date" id="dateA" aria-label="Fecha inicial" min="1984-01-01" />
+    <span class="arrow-sep"><svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg></span>
+    <input type="date" id="dateB" aria-label="Fecha final" min="1984-01-01" />
+    <button id="btnCompare">Activar</button>
+    <button id="btnAnimate" class="anim-btn" title="Ver la evolución animada con imágenes satelitales y pronóstico"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg> Animar</button>
+    <div class="legend">
+      <span><i style="background:#2ecc71"></i>Estable</span>
+      <span><i style="background:#FF4D5A"></i>Posible pérdida</span>
+      <span><i style="background:#287BFF"></i>Agua</span>
+      <span><i style="background:#8a949c"></i>Sin datos</span>
+    </div>
+  </div>
+
+
+  <div id="settingsPanel" class="popover glass" hidden role="dialog" aria-label="Configuración">
+    <h2>Configuración</h2>
+    <div class="cfg-row"><span><i id="cfgApiDot" class="dot-st"></i> <b id="cfgApiLabel"></b><br><span id="cfgApiText" class="muted">Sin comprobar</span></span>
+      <button id="cfgTest" class="ghost sm">Probar conexión</button></div>
+    <div class="cfg-row"><span><b>Sincronizar fuentes ahora</b><br><span id="cfgSyncMsg" class="muted">GDACS, NASA FIRMS, EONET e ITS_LIVE</span></span>
+      <button id="cfgSync" class="primary sm">Sincronizar</button></div>
+    <label class="cfg-row"><span><b>Mostrar eventos en el globo</b></span><input type="checkbox" id="cfgShowEvents" checked></label>
+    <label class="cfg-row"><span><b>Actualizar eventos cada</b></span>
+      <select id="cfgRefresh"><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option><option value="30">30 min</option></select></label>
+    <label class="cfg-row"><span><b>Texto adaptable al fondo</b><br><span class="muted">Cambia a texto claro u oscuro según el mapa</span></span><input type="checkbox" id="cfgTone" checked></label>
+  </div>
+
+  <button id="asstFab" class="asst-fab" type="button" data-state="idle" aria-pressed="false" aria-label="Hablar con Terra, asistente de voz (Alt+J)" title="Hablar con Terra, asistente de voz (Alt+J)">
+    <svg class="ic mic" aria-hidden="true"><use href="#i-mic"/></svg>
+    <span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+    <span class="ring r1" aria-hidden="true"></span><span class="ring r2" aria-hidden="true"></span><span class="orbit" aria-hidden="true"></span></button>
+  <div id="asstConfirm" class="asst-bubble glass" role="alertdialog" aria-labelledby="asstConfirmMsg" hidden>
+    <p id="asstConfirmMsg"></p>
+    <div class="actions"><button id="asstYes" class="primary sm" type="button">Sí, confirmar</button><button id="asstNo" class="ghost sm" type="button">No</button></div>
+  </div>
+  <div id="asstToast" class="asst-bubble glass" role="alert" hidden>
+    <p id="asstToastMsg"></p>
+    <form id="asstForm" class="pulse-form" hidden><label for="asstInput" class="sr-only">Escribe tu petición para Terra</label>
+      <input id="asstInput" placeholder="Ej. encierra 2 km aquí" autocomplete="off"><button class="primary sm" type="submit">Enviar</button></form>
+    <button id="asstToastClose" class="ghost sm" type="button">Cerrar</button>
+  </div>
+  <div id="asstAnnounce" class="sr-only" aria-live="polite"></div>
+  <script type="module" src="/src/main.js"></script>
+  <script type="module" src="/src/voice.js"></script>
+  <script type="module" src="/src/ui.js"></script>
+</body>
+</html>

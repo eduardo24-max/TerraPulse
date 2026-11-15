@@ -1,0 +1,9 @@
+{
+  "demo": true,
+  "lugar_id": "el-arenal",
+  "nota": "Zonas ilustrativas de demostración. No son detecciones reales.",
+  "zonas": [
+    { "clase": "estable", "poligono": [[-104.70,24.00],[-104.64,24.00],[-104.64,24.05],[-104.70,24.05]] },
+    { "clase": "perdida", "poligono": [[-104.685,24.012],[-104.662,24.010],[-104.658,24.030],[-104.680,24.034]] }
+  ]
+}

@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+apscheduler
+httpx
+requests
+python-dotenv
+psycopg2-binary
+asf_search
+earthengine-api

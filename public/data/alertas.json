@@ -1,0 +1,13 @@
+[
+  {
+    "id": "demo-arenal-1",
+    "demo": true,
+    "lugar": "El Arenal, Durango, México",
+    "lat": 24.02,
+    "lon": -104.67,
+    "fecha_utc": "2026-10-30T19:40:00Z",
+    "fuente": "FIRMS VIIRS NOAA-20",
+    "estado": "por_verificar",
+    "lugar_id": "el-arenal"
+  }
+]
